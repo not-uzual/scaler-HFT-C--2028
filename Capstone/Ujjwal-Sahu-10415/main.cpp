@@ -1,43 +1,72 @@
+#include <iomanip>
 #include <iostream>
-#include "Order.h"
-#include "OrderBook.h"
 
-using namespace std;
+#include "OrderBookA.h"
 
-int main() {
-    OrderBook orderBook;
+static void printBBO(const BBO &bbo)
+{
+    std::cout << "BBO: ";
+    if (bbo.has_bid)
+    {
+        std::cout << "bid " << bbo.bid_price << " x " << bbo.bid_qty << "   ";
+    }
+    else
+    {
+        std::cout << "bid none   ";
+    }
+    if (bbo.has_ask)
+    {
+        std::cout << "ask " << bbo.ask_price << " x " << bbo.ask_qty;
+    }
+    else
+    {
+        std::cout << "ask none";
+    }
+    std::cout << "\n";
+}
 
-    unsigned int nextId = 1;
-    unsigned int timestampNs = 1;
+static void printLevels(const char *label, const std::vector<Level> &levels)
+{
+    std::cout << label << ":\n";
+    if (levels.empty())
+    {
+        std::cout << "  (empty)\n";
+    }
+    for (const auto &l : levels)
+    {
+        std::cout << "  " << l.price << " x " << l.qty << "\n";
+    }
+}
 
-    cout << "Ujjwal wants to BUY 10 qty at price 100" << endl;
-    orderBook.addOrder({nextId++, Side::BUY, 100, 10, timestampNs++});
-    orderBook.printOrderBook();
+int main()
+{
+    std::cout << std::fixed << std::setprecision(2);
+    OrderBookA book;
 
-    cout << "Shyam wants to SELL 5 qty at price 101" << endl;
-    orderBook.addOrder({nextId++, Side::SELL, 101, 5, timestampNs++});
-    orderBook.printOrderBook();
+    std::cout << "-- Empty book --\n";
+    printBBO(book.get_bbo());
 
-    cout << "Ujjwal wants to BUY 5 qty at price 100.5" << endl;
-    orderBook.addOrder({nextId++, Side::BUY, 100.5, 5, timestampNs++});
-    orderBook.printOrderBook();
+    std::cout << "\n-- Cancel on empty book --\n";
+    std::cout << "cancel_order(999) -> " << std::boolalpha << book.cancel_order(999) << " (expect false)\n";
 
-    cout << "Paras wants to SELL 10 qty at price 100 (this should match)" << endl;
-    orderBook.addOrder({nextId++, Side::SELL, 100, 10, timestampNs++});
-    orderBook.printOrderBook();
+    std::cout << "\n-- Resting orders --\n";
+    book.add_order(1, Side::Buy, 99.50, 10);
+    book.add_order(2, Side::Buy, 99.75, 5);
+    book.add_order(3, Side::Buy, 99.75, 20);
+    book.add_order(4, Side::Sell, 100.25, 15);
+    book.add_order(5, Side::Sell, 100.50, 8);
+    printBBO(book.get_bbo());
+    printLevels("Bids (depth 10, only 2 levels exist)", book.get_bids(10));
+    printLevels("Asks (depth 10, only 2 levels exist)", book.get_asks(10));
 
-    orderBook.printBestPrices();
+    std::cout << "\n-- Cancel order 2 (shares a price level with order 3) --\n";
+    std::cout << "cancel_order(2) -> " << book.cancel_order(2) << " (expect true)\n";
+    std::cout << "cancel_order(2) -> " << book.cancel_order(2) << " (expect false, already cancelled)\n";
+    printLevels("Bids after cancel", book.get_bids(10));
 
-    BBO bbo = orderBook.getBBO();
-    cout << "getBBO() -> topMostBid: " << bbo.topMostBid
-         << " topMostAsk: " << bbo.topMostAsk << endl;
-
-    cout << "getBids() has " << orderBook.getBids().size() << " price level(s)" << endl;
-    cout << "getAsks() has " << orderBook.getAsks().size() << " price level(s)" << endl;
-
-    cout << "removing order id 1" << endl;
-    orderBook.removeOrder(1);
-    orderBook.printOrderBook();
+    std::cout << "\n-- Cancel remaining order at a price level removes the level --\n";
+    book.cancel_order(3);
+    printLevels("Bids after clearing 99.75", book.get_bids(10));
 
     return 0;
 }
