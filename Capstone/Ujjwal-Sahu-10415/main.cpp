@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "OrderBookA.h"
+#include "OrderBookB.h"
 
 static void printBBO(const BBO &bbo)
 {
@@ -38,10 +39,14 @@ static void printLevels(const char *label, const std::vector<Level> &levels)
     }
 }
 
-int main()
+// Manual sanity check for the required behaviors in the capstone spec, run
+// against every implementation so far. This is a scratch demo, not the real
+// correctness harness (that lands later as --verify).
+template <typename Book>
+static void runDemo(const char *label)
 {
-    std::cout << std::fixed << std::setprecision(2);
-    OrderBookA book;
+    std::cout << "=== " << label << " ===\n";
+    Book book;
 
     std::cout << "-- Empty book --\n";
     printBBO(book.get_bbo());
@@ -67,6 +72,13 @@ int main()
     std::cout << "\n-- Cancel remaining order at a price level removes the level --\n";
     book.cancel_order(3);
     printLevels("Bids after clearing 99.75", book.get_bids(10));
+    std::cout << "\n";
+}
 
+int main()
+{
+    std::cout << std::fixed << std::setprecision(2);
+    runDemo<OrderBookA>("Implementation A (std::map + list)");
+    runDemo<OrderBookB>("Implementation B (unordered_map + set)");
     return 0;
 }
