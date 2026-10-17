@@ -3,6 +3,7 @@
 
 #include "OrderBookA.h"
 #include "OrderBookB.h"
+#include "OrderBookC.h"
 
 static void printBBO(const BBO &bbo)
 {
@@ -39,9 +40,6 @@ static void printLevels(const char *label, const std::vector<Level> &levels)
     }
 }
 
-// Manual sanity check for the required behaviors in the capstone spec, run
-// against every implementation so far. This is a scratch demo, not the real
-// correctness harness (that lands later as --verify).
 template <typename Book>
 static void runDemo(const char *label)
 {
@@ -80,5 +78,6 @@ int main()
     std::cout << std::fixed << std::setprecision(2);
     runDemo<OrderBookA>("Implementation A (std::map + list)");
     runDemo<OrderBookB>("Implementation B (unordered_map + set)");
+    runDemo<OrderBookC>("Implementation C (flat array, own design)");
     return 0;
 }
